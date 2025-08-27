@@ -1,0 +1,20 @@
+
+{% macro render_field(field, type="text", placeholder="") -%}
+  <div class="mb-3">
+    {{ field.label(class="form-label") }}
+    {% set classes = "form-control" + (" is-invalid" if field.errors else "") %}
+    {{ field(class=classes, type=type, placeholder=placeholder) }}
+    {% if field.errors %}
+      <div class="invalid-feedback">
+        {{ field.errors[0] }}
+      </div>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro render_checkbox(field, label_text=None) -%}
+  <div class="form-check mb-3">
+    {{ field(class="form-check-input") }}
+    <label class="form-check-label" for="{{ field.id }}">{{ label_text or field.label.text }}</label>
+  </div>
+{%- endmacro %}
