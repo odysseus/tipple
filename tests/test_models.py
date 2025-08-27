@@ -21,4 +21,4 @@ def test_post_relationship(db):
     # backref via .author
     assert p.author.id == u.id
     # relationship on user
-    assert u.posts.count() == 1
+    assert len(u.posts) == 1

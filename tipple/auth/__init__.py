@@ -74,7 +74,7 @@ def me_page():
     if post_form.validate_on_submit():
         body = (post_form.body.data or "").strip()
         tags = (post_form.tags.data or "").strip() or None
-        p = Post(user_id=current_user.id, body=body, tags=tags) # pyright: ignore[reportCallIssue]
+        p = Post(user_id=current_user.id, body=body, tags=tags) 
         db.session.add(p)
         db.session.commit()
         flash("Posted!", "success")
@@ -111,7 +111,7 @@ def register_api():
     if User.query.filter((User.email == email) | (User.username == username)).first():
         return jsonify(error="email or username already in use"), 409
 
-    user = User(email=email, username=username, bio=bio) # pyright: ignore[reportCallIssue]
+    user = User(email=email, username=username, bio=bio)  
     user.set_password(password)
     db.session.add(user)
     db.session.commit()

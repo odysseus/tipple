@@ -8,35 +8,14 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 
 from .config_classes import DevelopmentConfig, TestingConfig, ProductionConfig
-from .models import db, User  # ensures models are registered for migrations
+from .models import db
 
 from flask_wtf import CSRFProtect
 csrf = CSRFProtect()
 
 migrate = Migrate()
 login_manager = LoginManager()
-login_manager.login_view = "auth.login_page" # type: ignore
-
-
-def _pick_config_from_env():
-    env = os.environ.get("TIPPLE_ENV", "development").lower()
-    return {
-        "development": DevelopmentConfig,
-        "testing": TestingConfig,
-        "production": ProductionConfig,
-        "prod": ProductionConfig,
-        "dev": DevelopmentConfig,
-        "test": TestingConfig,
-    }.get(env, DevelopmentConfig)
-
-
-@login_manager.user_loader
-def load_user(user_id: str):
-    # Flask-Login needs this to load the session’s user
-    try:
-        return db.session.get(User, int(user_id))
-    except (TypeError, ValueError):
-        return None
+login_manager.login_view = "auth.login_page"  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def create_app(config_object: type | str | None = None) -> Flask:
@@ -57,6 +36,11 @@ def create_app(config_object: type | str | None = None) -> Flask:
 
     # Init extensions
     db.init_app(app)
+    
+    # Import models AFTER db.init_app to avoid metaclass errors
+    with app.app_context():
+      from . import models
+    
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
@@ -74,3 +58,26 @@ def create_app(config_object: type | str | None = None) -> Flask:
         return render_template("index.html")
 
     return app
+
+
+def _pick_config_from_env():
+    env = os.environ.get("TIPPLE_ENV", "development").lower()
+    return {
+        "development": DevelopmentConfig,
+        "testing": TestingConfig,
+        "production": ProductionConfig,
+        "prod": ProductionConfig,
+        "dev": DevelopmentConfig,
+        "test": TestingConfig,
+    }.get(env, DevelopmentConfig)
+
+
+@login_manager.user_loader
+def load_user(user_id: str):
+    from .models import User
+
+    # Flask-Login needs this to load the session’s user
+    try:
+        return db.session.get(User, int(user_id))
+    except (TypeError, ValueError):
+        return None

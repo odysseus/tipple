@@ -13,6 +13,7 @@ dependencies = [
   "Flask-Migrate",
   "Flask-WTF",
   "email-validator",
+  "sqlalchemy>=2.0",
 ]
 
 [tool.setuptools.packages.find]

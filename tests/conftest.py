@@ -3,18 +3,12 @@ import pytest
 
 from tipple import create_app
 from tipple.config_classes import TestingConfig
-from tipple.models import db as _db, User
-
+from tipple.models import db as _db
 
 @pytest.fixture()
 def app():
     app = create_app(TestingConfig)
-    # Testing tweaks
-    app.config.update(
-        TESTING=True,
-        WTF_CSRF_ENABLED=False,   # make form & API posts easy in tests
-        SERVER_NAME="localhost",  # enables url_for in tests if needed
-    )
+    app.config.update(TESTING=True, WTF_CSRF_ENABLED=False, SERVER_NAME="localhost")
     with app.app_context():
         _db.create_all()
         yield app
@@ -24,7 +18,6 @@ def app():
 
 @pytest.fixture()
 def db(app):
-    # just expose the db bound to this app
     yield _db
 
 
@@ -32,18 +25,14 @@ def db(app):
 def client(app):
     return app.test_client()
 
+
 @pytest.fixture()
-def make_user(db):
-    def _make(
-        email="alice@example.com",
-        username="alice",
-        password="secret",
-        bio="Just a friendly tippler",
-    ):
+def make_user(db, app):
+    from tipple.models import User
+    def _make(email="alice@example.com", username="alice", password="secret", bio="Just a friendly tippler"):
         u = User(email=email, username=username, bio=bio)
         u.set_password(password)
-        db.session.add(u)
-        db.session.commit()
+        db.session.add(u); db.session.commit()
         return u
     return _make
 

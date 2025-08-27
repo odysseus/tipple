@@ -56,8 +56,8 @@ def test_recent_posts_rendered(client, make_user, login, db):
     login()
 
     # create a couple of posts directly
-    p1 = Post(user_id=user.id, body="Post A", tags="alpha") # pyright: ignore[reportCallIssue]
-    p2 = Post(user_id=user.id, body="Post B", tags=None) # pyright: ignore[reportCallIssue]
+    p1 = Post(user_id=user.id, body="Post A", tags="alpha") 
+    p2 = Post(user_id=user.id, body="Post B", tags=None) 
     db.session.add_all([p1, p2]); db.session.commit()
 
     page = client.get("/auth/me")
