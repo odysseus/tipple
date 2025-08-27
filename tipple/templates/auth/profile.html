@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile · tipple{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h4 mb-4">Edit profile</h1>
+
+          <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+              {{ form.bio.label(class="form-label") }}
+              {% set classes = "form-control" + (" is-invalid" if form.bio.errors else "") %}
+              {{ form.bio(class=classes, rows=4, maxlength="256",
+                          placeholder="Tell us a bit about you (max 256 characters)") }}
+              {% if form.bio.errors %}
+                <div class="invalid-feedback">{{ form.bio.errors[0] }}</div>
+              {% endif %}
+              <div class="form-text"><span id="bio-count">0</span>/256</div>
+            </div>
+
+            <button class="btn btn-primary" type="submit">{{ form.submit.label.text }}</button>
+            <a class="btn btn-outline-secondary ms-2" href="{{ url_for('auth.me_page') }}">Cancel</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% block body_extra %}
+  <script>
+    // Simple character counter
+    (function () {
+      const bio = document.getElementById("{{ form.bio.id }}");
+      const counter = document.getElementById("bio-count");
+      if (bio && counter) {
+        const update = () => counter.textContent = (bio.value || "").length;
+        bio.addEventListener("input", update);
+        update();
+      }
+    })();
+  </script>
+  {% endblock %}
+{% endblock %}

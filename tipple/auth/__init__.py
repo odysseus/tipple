@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from ..models import db, User
-from .forms import RegisterForm, LoginForm
+from .forms import RegisterForm, LoginForm, ProfileForm
 
 bp = Blueprint("auth", __name__, url_prefix="/auth", template_folder="../templates")
 
@@ -119,3 +119,15 @@ def logout_api():
 def me_api():
     u = current_user
     return jsonify(id=u.id, email=u.email, username=u.username)
+
+
+@bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile_page():
+    form = ProfileForm(obj=current_user)  # prefill from user
+    if form.validate_on_submit():
+        current_user.bio = (form.bio.data or "").strip() or None
+        db.session.commit()
+        flash("Profile updated.", "success")
+        return redirect(url_for("auth.me_page"))
+    return render_template("auth/profile.html", form=form)

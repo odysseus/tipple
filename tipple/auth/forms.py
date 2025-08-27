@@ -1,8 +1,8 @@
 # tipple/auth/forms.py
 from __future__ import annotations
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, EqualTo
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, Email, Length, EqualTo, Optional
 from ..models import User
 
 class RegisterForm(FlaskForm):
@@ -25,3 +25,8 @@ class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired()])
     remember = BooleanField("Remember me")
     submit = SubmitField("Sign in")
+
+
+class ProfileForm(FlaskForm):
+    bio = TextAreaField("Bio", validators=[Optional(), Length(max=256)])
+    submit = SubmitField("Save changes")

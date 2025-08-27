@@ -5,11 +5,15 @@
     <div class="col-md-8 col-lg-6">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h1 class="h4 mb-3">Your account</h1>
+          <h1 class="h4 mb-3 d-flex align-items-center justify-content-between">
+            <span>Your account</span>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('auth.profile_page') }}">Edit profile</a>
+          </h1>
           <ul class="list-group list-group-flush">
             <li class="list-group-item"><strong>ID:</strong> {{ user.id }}</li>
             <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
             <li class="list-group-item"><strong>Username:</strong> {{ user.username }}</li>
+            <li class="list-group-item"><strong>Bio:</strong> {{ user.bio or "—" }}</li> <!-- NEW -->
           </ul>
         </div>
       </div>
