@@ -2,8 +2,9 @@
 from __future__ import annotations
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from ..models import db, User
 from .forms import RegisterForm, LoginForm, ProfileForm
+from ..models import db, User, Post         # import Post
+from ..posts.forms import PostForm           # import PostForm
 
 bp = Blueprint("auth", __name__, url_prefix="/auth", template_folder="../templates")
 
@@ -63,10 +64,36 @@ def logout_page():
     return redirect(url_for("auth.login_page"))
 
 
-@bp.get("/me")
+# tipple/auth/__init__.py
+
+@bp.route("/me", methods=["GET", "POST"])
 @login_required
 def me_page():
-    return render_template("auth/me.html", user=current_user)
+    post_form = PostForm()
+
+    if post_form.validate_on_submit():
+        body = (post_form.body.data or "").strip()
+        tags = (post_form.tags.data or "").strip() or None
+        p = Post(user_id=current_user.id, body=body, tags=tags) # pyright: ignore[reportCallIssue]
+        db.session.add(p)
+        db.session.commit()
+        flash("Posted!", "success")
+        return redirect(url_for("auth.me_page"))
+
+    # NEW: POST happened but form invalid (e.g., >255 chars) – flash and redirect
+    if post_form.is_submitted() and not post_form.validate():
+        # Optional: you can inspect post_form.body.errors / post_form.tags.errors
+        flash("Post or tags too long.", "danger")
+        return redirect(url_for("auth.me_page"))
+
+    my_posts = (
+        Post.query.filter_by(user_id=current_user.id)
+        .order_by(Post.id.desc())
+        .limit(20)
+        .all()
+    )
+    return render_template("auth/me.html", user=current_user, post_form=post_form, posts=my_posts)
+
 
 # ---------- JSON API (unchanged behavior, just moved under /api) ----------
 
@@ -76,6 +103,7 @@ def register_api():
     email = (data.get("email") or "").strip().lower()
     username = (data.get("username") or "").strip()
     password = data.get("password")
+    bio = data.get("bio")
 
     if not email or not username or not password:
         return jsonify(error="email, username, and password are required"), 400
@@ -83,7 +111,7 @@ def register_api():
     if User.query.filter((User.email == email) | (User.username == username)).first():
         return jsonify(error="email or username already in use"), 409
 
-    user = User(email=email, username=username) # pyright: ignore[reportCallIssue]
+    user = User(email=email, username=username, bio=bio) # pyright: ignore[reportCallIssue]
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
@@ -118,7 +146,7 @@ def logout_api():
 @login_required
 def me_api():
     u = current_user
-    return jsonify(id=u.id, email=u.email, username=u.username)
+    return jsonify(id=u.id, email=u.email, username=u.username, bio=u.bio)
 
 
 @bp.route("/profile", methods=["GET", "POST"])

@@ -15,7 +15,7 @@ csrf = CSRFProtect()
 
 migrate = Migrate()
 login_manager = LoginManager()
-login_manager.login_view = "auth.login" # type: ignore
+login_manager.login_view = "auth.login_page" # type: ignore
 
 
 def _pick_config_from_env():
@@ -65,7 +65,10 @@ def create_app(config_object: type | str | None = None) -> Flask:
     from .auth import bp as auth_bp
     app.register_blueprint(auth_bp)
 
-    # Simple health route
+    from .posts import bp as posts_bp
+    app.register_blueprint(posts_bp)
+
+    # Main page route
     @app.get("/")
     def index():
         return render_template("index.html")

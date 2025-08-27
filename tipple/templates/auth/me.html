@@ -3,7 +3,7 @@
 {% block content %}
   <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
-      <div class="card shadow-sm">
+      <div class="card shadow-sm mb-4">
         <div class="card-body">
           <h1 class="h4 mb-3 d-flex align-items-center justify-content-between">
             <span>Your account</span>
@@ -13,10 +13,37 @@
             <li class="list-group-item"><strong>ID:</strong> {{ user.id }}</li>
             <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
             <li class="list-group-item"><strong>Username:</strong> {{ user.username }}</li>
-            <li class="list-group-item"><strong>Bio:</strong> {{ user.bio or "—" }}</li> <!-- NEW -->
+            <li class="list-group-item"><strong>Bio:</strong> {{ user.bio or "—" }}</li>
           </ul>
         </div>
       </div>
+
+      {# Embed the post form here #}
+      {% include "posts/_post_form.html" with context %}
+
+      {# Optional: show recent posts #}
+      {% if posts %}
+        <div class="card shadow-sm">
+          <div class="card-body p-4">
+            <h2 class="h5 mb-3">Your recent posts</h2>
+            <ul class="list-group list-group-flush">
+              {% for p in posts %}
+                <li class="list-group-item">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <div>{{ p.body }}</div>
+                      {% if p.tags %}
+                        <small class="text-muted">Tags: {{ p.tags }}</small>
+                      {% endif %}
+                    </div>
+                    <small class="text-muted">{{ p.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

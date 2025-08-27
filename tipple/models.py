@@ -1,4 +1,5 @@
 # tipple/models.py
+
 from __future__ import annotations
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -15,8 +16,17 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    bio = db.Column(db.String(256), nullable=True)  # NEW: up to 256 chars
+    bio = db.Column(db.String(256), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # NEW: relationship to posts
+    posts = db.relationship(
+        "Post",
+        backref="author",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -26,3 +36,22 @@ class User(UserMixin, db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<User {self.username}>"
+
+
+# NEW: Post model
+class Post(db.Model):
+    __tablename__ = "posts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    body = db.Column(db.String(255), nullable=False)   # required, up to 255 chars
+    tags = db.Column(db.String(255), nullable=True)    # optional, up to 255 chars
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<Post {self.id} by user {self.user_id}>"
