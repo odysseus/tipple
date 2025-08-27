@@ -22,10 +22,10 @@
             {% if current_user.is_authenticated %}
               <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.me_page') }}">Me</a></li>
               <li class="nav-item">
-                <form action="{{ url_for('auth.logout_page') }}" method="post" class="d-inline">
-                  {{ csrf_token() }}
-                  <button class="btn btn-outline-light btn-sm ms-2">Logout</button>
-                </form>
+              <form action="{{ url_for('auth.logout_page') }}" method="post" class="d-inline">
+                {{ logout_form.hidden_tag() }}
+                <button class="btn btn-outline-light btn-sm ms-2">Logout</button>
+              </form>
               </li>
             {% else %}
               <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login_page') }}">Login</a></li>

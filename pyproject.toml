@@ -18,3 +18,8 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=6.2.1",
+]

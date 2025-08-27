@@ -1,5 +1,6 @@
 # tipple/auth/__init__.py
 from __future__ import annotations
+from sqlite3 import IntegrityError
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from .forms import RegisterForm, LoginForm, ProfileForm
@@ -12,26 +13,46 @@ bp = Blueprint("auth", __name__, url_prefix="/auth", template_folder="../templat
 
 @bp.route("/register", methods=["GET", "POST"])
 def register_page():
+    """Render the registration form and create a new account on POST."""
     if current_user.is_authenticated:
         return redirect(url_for("index"))
 
     form = RegisterForm()
+
     if form.validate_on_submit():
-        user = User(
-            email=form.email.data.lower().strip(), # type: ignore
-            username=form.username.data.strip(), # type: ignore
-        )
-        user.set_password(form.password.data) # type: ignore
+        # The form's validators already normalized and checked duplicates
+        user = User(email=form.email.data, username=form.username.data) # pyright: ignore[reportArgumentType]
+        user.set_password(form.password.data) # pyright: ignore[reportArgumentType]
+
         db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            # DB-level uniqueness (race) — attach a friendly error and re-render
+            db.session.rollback()
+
+            # Try to be specific about what collided
+            existing_email = User.query.filter_by(email=form.email.data).first()
+            existing_username = User.query.filter_by(username=form.username.data).first()
+            if existing_email:
+                form.email.errors.append("That email is already registered.") # pyright: ignore[reportAttributeAccessIssue]
+            if existing_username:
+                form.username.errors.append("That username is taken.") # pyright: ignore[reportAttributeAccessIssue]
+            if not (existing_email or existing_username):
+                # Fallback (should be rare)
+                form.email.errors.append("Email or username already in use.") # pyright: ignore[reportAttributeAccessIssue]
+            return render_template("auth/register.html", form=form), 409
+
+        # Success: sign in and redirect
         login_user(user)
         flash("Welcome to tipple!", "success")
-        next_url = request.args.get("next")
-        if next_url and next_url.startswith("/"):
-            return redirect(next_url)
+        nxt = request.args.get("next")
+        if nxt and nxt.startswith("/"):
+            return redirect(nxt)
         return redirect(url_for("index"))
-    return render_template("auth/register.html", form=form)
 
+    # GET or validation errors (e.g., bad email, password mismatch)
+    return render_template("auth/register.html", form=form)
 
 @bp.route("/login", methods=["GET", "POST"])
 def login_page():

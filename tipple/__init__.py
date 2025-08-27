@@ -45,6 +45,12 @@ def create_app(config_object: type | str | None = None) -> Flask:
     login_manager.init_app(app)
     csrf.init_app(app)
 
+    # Form for logout button
+    @app.context_processor
+    def inject_forms():
+        from .auth.forms import EmptyForm
+        return {"logout_form": EmptyForm()}
+
     # Blueprints
     from .auth import bp as auth_bp
     app.register_blueprint(auth_bp)
