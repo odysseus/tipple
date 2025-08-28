@@ -15,7 +15,8 @@ def test_post_relationship(db):
     u.set_password("pw")
     db.session.add(u); db.session.commit()
 
-    p = Post(user_id=u.id, body="rel test", tags="x")
+    p = Post(body="rel test", tags="x")
+    p.author = u
     db.session.add(p); db.session.commit()
 
     # backref via .author

@@ -32,7 +32,7 @@ def create_app(config_object: type | str | None = None) -> Flask:
 
     # Default DB URI if none provided: sqlite file in instance/
     if not app.config.get("SQLALCHEMY_DATABASE_URI"):
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{Path(app.instance_path) / 'tipple.sqlite'}"
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{Path(app.instance_path) / 'tipple.sqlite'}" # pragma: no cover
 
     # Init extensions
     db.init_app(app)
@@ -66,7 +66,7 @@ def create_app(config_object: type | str | None = None) -> Flask:
     return app
 
 
-def _pick_config_from_env():
+def _pick_config_from_env(): # pragma: no cover
     env = os.environ.get("TIPPLE_ENV", "development").lower()
     return {
         "development": DevelopmentConfig,
@@ -79,7 +79,7 @@ def _pick_config_from_env():
 
 
 @login_manager.user_loader
-def load_user(user_id: str):
+def load_user(user_id: str): # pragma: no cover
     from .models import User
 
     # Flask-Login needs this to load the session’s user

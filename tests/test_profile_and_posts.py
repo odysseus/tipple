@@ -56,8 +56,9 @@ def test_recent_posts_rendered(client, make_user, login, db):
     login()
 
     # create a couple of posts directly
-    p1 = Post(user_id=user.id, body="Post A", tags="alpha") 
-    p2 = Post(user_id=user.id, body="Post B", tags=None) 
+    p1 = Post(body="Post A", tags="alpha") 
+    p2 = Post(body="Post B", tags=None) 
+    p1.author, p2.author = user, user
     db.session.add_all([p1, p2]); db.session.commit()
 
     page = client.get("/auth/me")

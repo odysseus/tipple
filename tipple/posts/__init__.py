@@ -14,8 +14,10 @@ def create_post():
         return jsonify(error="body is required"), 400
     if len(body) > 255 or (tags and len(tags) > 255):
         return jsonify(error="body/tags too long"), 400
-    p = Post(user_id=current_user.id, body=body, tags=tags) 
+    p = Post(body=body, tags=tags) 
+    p.author = current_user
     db.session.add(p); db.session.commit()
+
     return jsonify(id=p.id, body=p.body, tags=p.tags, user_id=p.user_id), 201
 
 @bp.get("/")

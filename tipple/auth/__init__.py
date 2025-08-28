@@ -95,7 +95,8 @@ def me_page():
     if post_form.validate_on_submit():
         body = (post_form.body.data or "").strip()
         tags = (post_form.tags.data or "").strip() or None
-        p = Post(user_id=current_user.id, body=body, tags=tags) 
+        p = Post(body=body, tags=tags) 
+        p.author = current_user # pyright: ignore[reportAttributeAccessIssue]
         db.session.add(p)
         db.session.commit()
         flash("Posted!", "success")

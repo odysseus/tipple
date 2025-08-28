@@ -64,7 +64,10 @@ class Post(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
     # IMPORTANT: correct FK target must match __tablename__ ("users.id")
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+        ForeignKey("users.id", ondelete="CASCADE"), 
+        index=True, 
+        nullable=False, 
+        init=False,
     )
     body: Mapped[str] = mapped_column(String(255), nullable=False)
     tags: Mapped[Optional[str]] = mapped_column(String(255), default=None)
