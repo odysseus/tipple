@@ -53,6 +53,17 @@ def test_logout_flow(client, make_user, login):
     me = client.get("/auth/me", follow_redirects=False)
     assert me.status_code in (302, 303)
 
+
+def test_registration_to_index_for_logged_in_user(client, make_user, login):
+    make_user()
+    login()
+    
+    resp = client.get("/auth/register", follow_redirects=True)
+
+    assert resp.status_code == 200
+    assert b"Me" in resp.data
+
+
 def test_register_html_duplicate_email_shows_error(client, db, make_user):
     make_user(email="dup@example.com", username="original", password="pw")
     resp = client.post(

@@ -24,10 +24,12 @@ def register_page():
         user = User(email=form.email.data, username=form.username.data) # pyright: ignore[reportArgumentType]
         user.set_password(form.password.data) # pyright: ignore[reportArgumentType]
 
+        # Validating and checking dupes has already happened so this should never run
+        # but is included as a last safeguard on the DB level. 
         db.session.add(user)
-        try:
+        try: # pragma: no cover
             db.session.commit()
-        except IntegrityError:
+        except IntegrityError: # pragma: no cover
             # DB-level uniqueness (race) — attach a friendly error and re-render
             db.session.rollback()
 
@@ -78,7 +80,6 @@ def login_page():
 
 
 @bp.post("/logout")
-@login_required
 def logout_page():
     logout_user()
     flash("Signed out.", "info")

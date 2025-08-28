@@ -2,6 +2,7 @@
 from __future__ import annotations
 from datetime import datetime
 from typing import Optional, List, Any, TYPE_CHECKING
+import uuid
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, DateTime, ForeignKey
@@ -88,3 +89,49 @@ class Post(db.Model):
             author: Optional[User] = ...,
             **kw: Any,
         ) -> None: ...
+
+# tipple/models.py (add alongside your other models)
+class Channel(db.Model):
+    __tablename__ = "channels"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        init=False
+    )
+
+    # Required channel name (max 255 chars)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Self-referential parent (nullable)
+    parent_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("channels.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+        init=False,          # ORM fills from relationship
+    )
+
+    parent: Mapped[Optional["Channel"]] = relationship(
+        back_populates="children",
+        remote_side="Channel.id",   # tells SQLA which side is the parent
+        init=False,
+    )
+
+    # Children collection
+    children: Mapped[List["Channel"]] = relationship(
+        back_populates="parent",
+        cascade="all, delete-orphan",
+        single_parent=True,         # required for delete-orphan on self-ref
+        passive_deletes=True,
+        init=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        init=False,
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<Channel {self.id} name={self.name!r} parent_id={self.parent_id!r}>"
