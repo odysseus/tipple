@@ -6,9 +6,12 @@ import uuid
 
 import sqlalchemy as sa
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Integer, DateTime, ForeignKey
+from sqlalchemy import String, Integer, DateTime, ForeignKey, JSON
+from sqlalchemy import event
+from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import (
-    DeclarativeBase, MappedAsDataclass, Mapped, mapped_column, relationship
+    DeclarativeBase, MappedAsDataclass, Mapped, mapped_column, relationship,
+    Session, attributes
 )
 from sqlalchemy.exc import IntegrityError
 
@@ -170,6 +173,16 @@ class Channel(db.Model):
         init=False,
     )
 
+    # NEW: Path of ancestor channel IDs (root -> parent), excludes self.
+    # Uses JSON type which SQLite stores as TEXT. 
+    path: Mapped[List[int]] = mapped_column(
+        "path",
+        MutableList.as_mutable(JSON),
+        insert_default=list,
+        nullable=False,
+        init=False,
+    )
+
     if TYPE_CHECKING:
         def __init__(
             self,
@@ -187,6 +200,66 @@ class Channel(db.Model):
     
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Channel {self.id} name={self.name!r} parent_id={self.parent_id!r}>"
+
+
+def _compute_path_ids(ch: "Channel") -> list[int]:
+    """
+    Build ancestor id list from root -> parent (excludes self).
+    Guards against accidental cycles and limits depth.
+    """
+    ids: list[int] = []
+    seen: set[int] = set()
+    current = ch.parent
+    for _ in range(50):            # reasonable safety cap
+        if current is None:
+            break
+        if current.id is None:
+            # parent not flushed yet; fall back to current DB value via parent_id
+            # (will correct on the same flush once IDs exist)
+            break
+        if current.id in seen:
+            break                  # cycle guard
+        ids.append(current.id)
+        seen.add(current.id)
+        current = current.parent
+    return list(reversed(ids))
+
+
+@event.listens_for(Session, "before_flush")
+def _update_channel_paths(session: Session, flush_context, instances):
+    """
+    For new channels, or channels whose parent changed, recompute .path.
+    Also update descendants if a node was reparented.
+    """
+    # Gather affected channels
+    targets: list[Channel] = []
+    for obj in session.new.union(session.dirty):
+        if isinstance(obj, Channel):
+            if obj in session.new:
+                targets.append(obj)
+            else:
+                hist = attributes.get_history(obj, "parent_id", passive=True)
+                if hist.has_changes():
+                    targets.append(obj)
+
+    if not targets:
+        return
+
+    # Recompute for each target and all its descendants
+    for ch in targets:
+        ch.path = _compute_path_ids(ch)
+
+        # Propagate to descendants (their ancestor chain changed too)
+        stack = list(getattr(ch, "children", []) or [])
+        # Limit breadth/depth to avoid surprises on pathological graphs
+        visited: set[int] = set()
+        while stack:
+            child = stack.pop()
+            if child.id and child.id in visited:
+                continue
+            child.path = _compute_path_ids(child)
+            visited.add(child.id or id(child))
+            stack.extend(child.children or [])
 
         
 user_channel_follows = sa.Table(

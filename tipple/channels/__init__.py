@@ -12,6 +12,19 @@ from .forms import ChannelCreateForm
 bp = Blueprint("channels", __name__, url_prefix="/channels")
 
 
+@bp.get("/")
+@login_required
+def list_followed_channels():
+    """Show all channels the current user follows."""
+    # Safely get the list (in case the m2m isn't present in some builds)
+    followed = list(getattr(current_user, "following", []))
+    # Deduplicate and sort by name for a nice display
+    unique_by_id = {ch.id: ch for ch in followed}.values()
+    channels = sorted(unique_by_id, key=lambda c: c.name.lower())
+    return render_template("channels/index.html", channels=channels)
+
+
+
 @bp.route("/new", methods=["GET", "POST"])
 def new_channel():
     """

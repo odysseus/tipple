@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}My Channels · tipple{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center mb-3">
+        <h1 class="h5 mb-0">Channels you follow</h1>
+        <a class="btn btn-sm btn-primary ms-auto" href="{{ url_for('channels.new_channel') }}">
+          Create Channel
+        </a>
+      </div>
+
+      {% if channels %}
+        <div class="card shadow-sm">
+          <ul class="list-group list-group-flush">
+            {% for ch in channels %}
+              <li class="list-group-item d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">#{{ ch.name }}</div>
+
+                  {# Breadcrumb: walk up parents (root → current) #}
+                  {% set path = [] %}
+                  {% set c = ch %}
+                  {% for _ in range(10) %}
+                    {% set path = [c] + path %}
+                    {% set c = c.parent %}
+                  {% endfor %}
+                  <nav aria-label="breadcrumb" class="small mb-0">
+                    <ol class="breadcrumb mb-0">
+                      {% for node in path %}
+                        <li class="breadcrumb-item {% if loop.last %}active{% endif %}">
+                          {% if loop.last %}
+                            <span>#{{ node.name }}</span>
+                          {% else %}
+                            <a href="{{ url_for('channels.get_channel', channel_id=node.id) }}">#{{ node.name }}</a>
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    </ol>
+                  </nav>
+                </div>
+
+                <div class="ms-3 d-flex gap-2">
+                  <a class="btn btn-outline-secondary btn-sm"
+                     href="{{ url_for('channels.get_channel', channel_id=ch.id) }}">
+                    View
+                  </a>
+                  <form method="post" action="{{ url_for('channels.unfollow_channel', channel_id=ch.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-danger">Unfollow</button>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          You aren’t following any channels yet.
+          <a href="{{ url_for('channels.new_channel') }}" class="alert-link">Create a channel</a>
+          or browse channels to follow.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
