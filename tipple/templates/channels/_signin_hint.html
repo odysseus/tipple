@@ -1,0 +1,4 @@
+<div class="alert alert-info d-flex justify-content-between align-items-center">
+  <div>Sign in to post in #{{ channel.name }}.</div>
+  <a class="btn btn-sm btn-primary" href="{{ url_for('auth.login_page', next=request.path) }}">Sign in</a>
+</div>

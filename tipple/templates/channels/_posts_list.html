@@ -1,0 +1,21 @@
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if posts %}
+      <ul class="list-group list-group-flush">
+        {% for p in posts %}
+          {% include "channels/_post_item.html" %}
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="p-4 text-center text-muted">
+        No posts yet.{% if current_user.is_authenticated %} Be the first to post!{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if next_page_url %}
+    <div class="card-footer text-center">
+      <a class="btn btn-outline-secondary btn-sm" href="{{ next_page_url }}">Load more</a>
+    </div>
+  {% endif %}
+</div>

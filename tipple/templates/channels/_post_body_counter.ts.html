@@ -1,0 +1,8 @@
+{# templates/channels/_post_body_counter.ts.html #}
+<script src="{{ url_for('static', filename='js/post_body_counter.js') }}" defer></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    // Pass the rendered element IDs from WTForms/Jinja
+    window.tipple?.initPostBodyCounter('{{ post_form.body.id }}', 'post-body-count');
+  });
+</script>

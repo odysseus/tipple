@@ -1,0 +1,20 @@
+{# Channel header + breadcrumb + follow/unfollow #}
+<div class="d-flex align-items-center mb-3">
+  <h1 class="h4 mb-0">#{{ channel.name }}</h1>
+
+  {% if channel.parent %}
+    <span class="text-muted ms-3">
+      in <a href="{{ url_for('channels.get_channel', channel_id=channel.parent.id) }}">#{{ channel.parent.name }}</a>
+    </span>
+  {% endif %}
+
+  <span class="ms-auto d-flex align-items-center gap-2">
+    <span class="small text-muted">
+      created {{ channel.created_at.strftime("%Y-%m-%d %H:%M") }}
+    </span>
+
+    {% if current_user.is_authenticated %}
+      {% include "channels/_follow_button.html" with context %}
+    {% endif %}
+  </span>
+</div>

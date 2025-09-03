@@ -1,0 +1,17 @@
+<li class="list-group-item">
+  <div class="d-flex">
+    <div class="flex-grow-1">
+      <div class="mb-1">{{ p.body }}</div>
+      <div class="small text-muted">
+        by <strong>{{ p.author.username }}</strong>
+        · {{ p.created_at.strftime("%Y-%m-%d %H:%M") }}
+        {% if p.tags %}
+          ·
+          {% for t in p.tags.split(',') %}
+            <span class="badge rounded-pill text-bg-secondary">{{ t.strip() }}</span>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</li>

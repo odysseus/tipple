@@ -1,0 +1,9 @@
+{# expects: channel, is_following (bool) passed from the view #}
+<form method="post"
+      action="{{ url_for('channels.unfollow_channel', channel_id=channel.id) if is_following else url_for('channels.follow_channel', channel_id=channel.id) }}"
+      class="d-inline ms-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-sm {{ 'btn-outline-secondary' if is_following else 'btn-primary' }}">
+    {{ 'Unfollow' if is_following else 'Follow' }}
+  </button>
+</form>

@@ -1,14 +1,11 @@
-{% from "_forms.html" import render_field %}
-
 <div class="card shadow-sm mb-4">
   <div class="card-body p-4">
     <h2 class="h6 mb-3">Post to #{{ channel.name }}</h2>
-    <form method="post" novalidate>
+    <form method="post" action="{{ url_for('channels.get_channel', channel_id=channel.id) }}" novalidate>
       {{ post_form.hidden_tag() }}
 
-      {# Ensure the channel id is submitted; works with a HiddenField on the form OR a manual input #}
       {% if post_form.channel_id is defined %}
-        {{ post_form.channel_id() }}
+        {{ post_form.channel_id(value=channel.id) }}
       {% else %}
         <input type="hidden" name="channel_id" value="{{ channel.id }}">
       {% endif %}
@@ -23,22 +20,16 @@
         <div class="form-text"><span id="post-body-count">0</span>/255</div>
       </div>
 
-      {{ render_field(post_form.tags, placeholder="e.g. updates, release") }}
+      <div class="mb-3">
+        {{ post_form.tags.label(class="form-label") }}
+        {% set tclasses = "form-control" + (" is-invalid" if post_form.tags.errors else "") %}
+        {{ post_form.tags(class=tclasses, maxlength="255", placeholder="e.g. updates, release") }}
+        {% if post_form.tags.errors %}
+          <div class="invalid-feedback">{{ post_form.tags.errors[0] }}</div>
+        {% endif %}
+      </div>
 
       <button class="btn btn-primary" type="submit">{{ post_form.submit.label.text }}</button>
     </form>
   </div>
 </div>
-
-<script>
-  // Lightweight character counter for the body field
-  (function () {
-    const ta = document.getElementById("{{ post_form.body.id }}");
-    const counter = document.getElementById("post-body-count");
-    if (ta && counter) {
-      const update = () => counter.textContent = (ta.value || "").length;
-      ta.addEventListener("input", update);
-      update();
-    }
-  })();
-</script>
