@@ -137,9 +137,9 @@ def test_model_uniqueness_duplicate_email_raises_integrity_error(db, make_user):
     u2 = User(email="dup@example.com", username="user2")
     u2.set_password("pw")
     db.session.add(u2)
+    raised = False
     try:
         db.session.commit()
-        raised = False
     except IntegrityError:
         db.session.rollback()
         raised = True
@@ -152,9 +152,9 @@ def test_model_uniqueness_duplicate_username_raises_integrity_error(db, make_use
     u2 = User(email="two@example.com", username="dupeuser")
     u2.set_password("pw")
     db.session.add(u2)
+    raised = False
     try:
         db.session.commit()
-        raised = False
     except IntegrityError:
         db.session.rollback()
         raised = True

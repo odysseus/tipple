@@ -7,20 +7,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 
 
-@pytest.fixture()
-def make_channel(db):
-    """Quick helper to create a Channel."""
-    from tipple.models import Channel
-    def _make(name: str = "general", parent: Channel | None = None) -> Channel:
-        ch = Channel(name=name)
-        if parent:
-            ch.parent = parent
-        db.session.add(ch)
-        db.session.commit()
-        return ch
-    return _make
-
-
 def test_create_post_via_relationships(db, make_user, make_channel):
     from tipple.models import Post
     u = make_user(email="p1@example.com", username="p1")
@@ -51,7 +37,7 @@ def test_create_post_via_parent_collections(db, make_user, make_channel):
         u.posts.append(p)   # sets user_id (no flush yet)
         ch.posts.append(p)  # sets channel_id (still no flush)
 
-    db.session.commit()
+        db.session.commit()
 
     assert p.user_id == u.id
     assert p.channel_id == ch.id

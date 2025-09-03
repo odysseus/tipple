@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Create a channel · tipple{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h5 mb-3">Create a channel</h1>
+
+          <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+              {{ form.name.label(class="form-label") }}
+              {% set nclasses = "form-control" + (" is-invalid" if form.name.errors else "") %}
+              {{ form.name(class=nclasses, maxlength="255", placeholder="Channel name") }}
+              {% if form.name.errors %}
+                <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              {{ form.parent_id.label(class="form-label") }}
+              {% set pclasses = "form-select" + (" is-invalid" if form.parent_id.errors else "") %}
+              {{ form.parent_id(class=pclasses) }}
+              {% if form.parent_id.errors %}
+                <div class="invalid-feedback">{{ form.parent_id.errors[0] }}</div>
+              {% endif %}
+              <div class="form-text">Optional: choose a parent channel.</div>
+            </div>
+
+            <button class="btn btn-primary" type="submit">{{ form.submit.label.text }}</button>
+            <a class="btn btn-outline-secondary ms-2" href="{{ url_for('index') }}">Cancel</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

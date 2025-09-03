@@ -2,15 +2,15 @@
 {% block title %}#{{ channel.name }} · tipple{% endblock %}
 
 {% block content %}
-
-  <!-- Channel header / breadcrumb -->
   <div class="row justify-content-center">
     <div class="col-lg-8">
+
+      <!-- Channel header / breadcrumb -->
       <div class="d-flex align-items-center mb-3">
         <h1 class="h4 mb-0">#{{ channel.name }}</h1>
         {% if channel.parent %}
           <span class="text-muted ms-3">
-            in <a href="{{ url_for('channels.show', channel_id=channel.parent.id) }}">#{{ channel.parent.name }}</a>
+            in <a href="{{ url_for('channels.get_channel', channel_id=channel.parent.id) }}">#{{ channel.parent.name }}</a>
           </span>
         {% endif %}
         <span class="ms-auto small text-muted">
@@ -18,48 +18,105 @@
         </span>
       </div>
 
-      {# Embedded post-to-channel form #}
-      {% include "channels/_post_form.html" with context %}
+      <!-- Post form -->
+      {% if current_user.is_authenticated %}
+        <div class="card shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h2 class="h6 mb-3">Post to #{{ channel.name }}</h2>
+            <form method="post" action="{{ url_for('channels.get_channel', channel_id=channel.id) }}" novalidate>
+              {{ post_form.hidden_tag() }}
+              <!-- ensure channel is attached server-side -->
+              {% if post_form.channel_id is defined %}
+                {{ post_form.channel_id(value=channel.id) }}
+              {% else %}
+                <input type="hidden" name="channel_id" value="{{ channel.id }}">
+              {% endif %}
 
-      {# Messages list #}
+              <div class="mb-3">
+                {{ post_form.body.label(class="form-label") }}
+                {% set classes = "form-control" + (" is-invalid" if post_form.body.errors else "") %}
+                {{ post_form.body(class=classes, rows=3, maxlength="255", placeholder="Share something with the channel…") }}
+                {% if post_form.body.errors %}
+                  <div class="invalid-feedback">{{ post_form.body.errors[0] }}</div>
+                {% endif %}
+                <div class="form-text"><span id="post-body-count">0</span>/255</div>
+              </div>
+
+              <div class="mb-3">
+                {{ post_form.tags.label(class="form-label") }}
+                {% set tclasses = "form-control" + (" is-invalid" if post_form.tags.errors else "") %}
+                {{ post_form.tags(class=tclasses, maxlength="255", placeholder="e.g. updates, release") }}
+                {% if post_form.tags.errors %}
+                  <div class="invalid-feedback">{{ post_form.tags.errors[0] }}</div>
+                {% endif %}
+              </div>
+
+              <button class="btn btn-primary" type="submit">{{ post_form.submit.label.text }}</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+          <div>Sign in to post in #{{ channel.name }}.</div>
+          <a class="btn btn-sm btn-primary" href="{{ url_for('auth.login_page', next=request.path) }}">Sign in</a>
+        </div>
+      {% endif %}
+
+      <!-- Messages list -->
       <div class="card shadow-sm">
         <div class="card-body p-0">
-          {% if messages %}
+          {% if posts %}
             <ul class="list-group list-group-flush">
-              {% for m in messages %}
+              {% for p in posts %}
                 <li class="list-group-item">
                   <div class="d-flex">
                     <div class="flex-grow-1">
-                      <div class="mb-1">{{ m.body }}</div>
+                      <div class="mb-1">{{ p.body }}</div>
                       <div class="small text-muted">
-                        by <strong>{{ m.author.username }}</strong>
-                        · {{ m.created_at.strftime("%Y-%m-%d %H:%M") }}
-                        {% if m.tags %}
+                        by <strong>{{ p.author.username }}</strong>
+                        · {{ p.created_at.strftime("%Y-%m-%d %H:%M") }}
+                        {% if p.tags %}
                           ·
-                          {% for t in m.tags.split(',') %}
+                          {% for t in p.tags.split(',') %}
                             <span class="badge rounded-pill text-bg-secondary">{{ t.strip() }}</span>
                           {% endfor %}
                         {% endif %}
                       </div>
                     </div>
-                    {# optional: quick actions could go here #}
                   </div>
                 </li>
               {% endfor %}
             </ul>
           {% else %}
             <div class="p-4 text-center text-muted">
-              No messages yet. Be the first to post!
+              No posts yet.
+              {% if current_user.is_authenticated %} Be the first to post!{% endif %}
             </div>
           {% endif %}
         </div>
+
         {% if next_page_url %}
           <div class="card-footer text-center">
             <a class="btn btn-outline-secondary btn-sm" href="{{ next_page_url }}">Load more</a>
           </div>
         {% endif %}
       </div>
+
     </div>
   </div>
 
+  {% block body_extra %}
+  <script>
+    // Character counter for the body field
+    (function () {
+      var ta = document.getElementById("{{ post_form.body.id }}");
+      var counter = document.getElementById("post-body-count");
+      if (ta && counter) {
+        var update = function () { counter.textContent = (ta.value || "").length; };
+        ta.addEventListener("input", update);
+        update();
+      }
+    })();
+  </script>
+  {% endblock %}
 {% endblock %}
