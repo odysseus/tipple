@@ -61,6 +61,9 @@ def create_app(config_object: type | str | None = None) -> Flask:
     from .channels import bp as channels_bp
     app.register_blueprint(channels_bp)
 
+    from .channels.api import bp as channels_api_bp
+    app.register_blueprint(channels_api_bp)
+    
     # Main page route
     @app.get("/")
     def index():

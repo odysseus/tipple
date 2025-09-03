@@ -6,7 +6,6 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from ..models import db, Channel, Post
-# Use the post form you already have. If you created ChannelPostForm, import that instead.
 from ..posts.forms import PostForm
 from .forms import ChannelCreateForm
 
@@ -76,6 +75,12 @@ def get_channel(channel_id: int):
     if not channel:
         abort(404)
 
+    is_following = (
+        current_user.is_authenticated
+        and hasattr(current_user, "following")
+        and (channel in current_user.following)
+    )
+    
     form = PostForm()
 
     if request.method == "POST":
@@ -102,7 +107,13 @@ def get_channel(channel_id: int):
             .order_by(Post.created_at.desc(), Post.id.desc())
             .all()
         )
-        return render_template("channels/show.html", channel=channel, posts=posts, post_form=form), 400
+        return render_template(
+            "channels/show.html", 
+            channel=channel, 
+            posts=posts, 
+            post_form=form, 
+            is_following=is_following
+            ), 400
 
     # GET
     posts = (
@@ -110,51 +121,53 @@ def get_channel(channel_id: int):
         .order_by(Post.created_at.desc(), Post.id.desc())
         .all()
     )
-    return render_template("channels/show.html", channel=channel, posts=posts, post_form=form)
+
+    return render_template(
+        "channels/show.html", 
+        channel=channel, 
+        posts=posts, 
+        post_form=form, 
+        is_following=is_following
+        )
 
 
-
-### API JSON Methods ###
-
-@bp.get("/api/<int:channel_id>")
-def get_channel_api(channel_id: int):
-    """Return channel details as JSON."""
-    ch = db.session.get(Channel, channel_id)
-    if not ch:
-        abort(404)
-
-    # follower_count only if the m2m is set up
-    follower_count = len(ch.followers) if hasattr(ch, "followers") else None
-
-    payload = {
-        "channel_id": ch.id,
-        "name": ch.name,
-        "parent_id": ch.parent_id,
-        "created_at": ch.created_at.isoformat(),
-    }
-    if follower_count is not None:
-        payload["follower_count"] = follower_count
-    return jsonify(payload)
-
-
-@bp.post("/api/<int:channel_id>")
+@bp.post("/<int:channel_id>/follow")
 @login_required
-def follow_channel_api(channel_id: int):
-    """Current user follows the channel (idempotent)."""
+def follow_channel(channel_id: int):
     ch = db.session.get(Channel, channel_id)
     if not ch:
         abort(404)
+    # idempotent: do nothing if already following
+    if hasattr(current_user, "following") and ch in current_user.following:
+        flash(f"Already following #{ch.name}.", "info")
+        return redirect(url_for("channels.get_channel", channel_id=ch.id))
 
-    # If already following, do nothing (idempotent success)
-    if ch in current_user.following:
-        return jsonify(message="already following", id=ch.id), 200
-
-    current_user.following.append(ch)
     try:
+        current_user.following.append(ch)
         db.session.commit()
+        flash(f"Now following #{ch.name}.", "success")
     except IntegrityError:
         db.session.rollback()
-        # If a race caused the join row to exist, treat as already-following
-        return jsonify(message="already following", id=ch.id), 200
+        # race-safe: treat as already following
+        flash(f"Already following #{ch.name}.", "info")
+    return redirect(url_for("channels.get_channel", channel_id=ch.id))
 
-    return jsonify(message="now following", id=ch.id), 201
+
+@bp.post("/<int:channel_id>/unfollow")
+@login_required
+def unfollow_channel(channel_id: int):
+    ch = db.session.get(Channel, channel_id)
+    if not ch:
+        abort(404)
+    if not hasattr(current_user, "following"):
+        flash("Following is not available.", "warning")
+        return redirect(url_for("channels.get_channel", channel_id=channel_id))
+
+    # Remove if present; idempotent if not
+    if ch in current_user.following:
+        current_user.following.remove(ch)
+        db.session.commit()
+        flash(f"Unfollowed #{ch.name}.", "info")
+    else:
+        flash(f"You are not following #{ch.name}.", "info")
+    return redirect(url_for("channels.get_channel", channel_id=ch.id))

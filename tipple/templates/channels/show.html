@@ -9,12 +9,26 @@
       <div class="d-flex align-items-center mb-3">
         <h1 class="h4 mb-0">#{{ channel.name }}</h1>
         {% if channel.parent %}
-          <span class="text-muted ms-3">
-            in <a href="{{ url_for('channels.get_channel', channel_id=channel.parent.id) }}">#{{ channel.parent.name }}</a>
-          </span>
+        <span class="text-muted ms-3">
+          in <a href="{{ url_for('channels.get_channel', channel_id=channel.parent.id) }}">#{{ channel.parent.name }}</a>
+        </span>
         {% endif %}
-        <span class="ms-auto small text-muted">
-          created {{ channel.created_at.strftime("%Y-%m-%d %H:%M") }}
+      
+        <span class="ms-auto d-flex align-items-center gap-2">
+          <span class="small text-muted">
+            created {{ channel.created_at.strftime("%Y-%m-%d %H:%M") }}
+          </span>
+      
+        {% if current_user.is_authenticated %}
+        <form method="post"
+          action="{{ url_for('channels.unfollow_channel', channel_id=channel.id) if is_following else url_for('channels.follow_channel', channel_id=channel.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm {{ 'btn-outline-secondary' if is_following else 'btn-primary' }}">
+            {{ 'Unfollow' if is_following else 'Follow' }}
+          </button>
+        </form>
+        {% endif %}
+
         </span>
       </div>
 
