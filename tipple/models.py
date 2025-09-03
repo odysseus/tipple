@@ -1,14 +1,18 @@
 # tipple/models.py
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, List, Any, TYPE_CHECKING
 import uuid
 
+import sqlalchemy as sa
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import (
     DeclarativeBase, MappedAsDataclass, Mapped, mapped_column, relationship
 )
+from sqlalchemy.exc import IntegrityError
+
+from flask.signals import appcontext_pushed
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -28,7 +32,7 @@ class User(UserMixin, db.Model):
     username: Mapped[str] = mapped_column(String(80), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False, repr=False, init=False)
     bio: Mapped[Optional[str]] = mapped_column(String(256), default=None)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow,
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC),
                                                 nullable=False, init=False)
 
     # IMPORTANT: list-based relationship + matching back_populates on Post.author
@@ -36,6 +40,12 @@ class User(UserMixin, db.Model):
         back_populates="author",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        init=False,
+    )
+
+    following: Mapped[List["Channel"]] = relationship(
+        secondary="user_channel_follows",
+        back_populates="followers",
         init=False,
     )
 
@@ -63,6 +73,7 @@ class Post(db.Model):
     __tablename__ = "posts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, init=False)
+
     # IMPORTANT: correct FK target must match __tablename__ ("users.id")
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), 
@@ -70,13 +81,26 @@ class Post(db.Model):
         nullable=False, 
         init=False,
     )
+    
+    # NEW: required channel FK (init=False so constructor doesn’t demand it)
+    channel_id: Mapped[int] = mapped_column(
+        ForeignKey("channels.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        init=False,
+    )
+    channel: Mapped["Channel"] = relationship(back_populates="posts", init=False)
+
+    
     body: Mapped[str] = mapped_column(String(255), nullable=False)
     tags: Mapped[Optional[str]] = mapped_column(String(255), default=None)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow,
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC),
                                                 nullable=False, init=False)
 
-    # Mirror side of the relationship
     author: Mapped["User"] = relationship(back_populates="posts", init=False)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<Post {self.id} user_id={self.user_id} channel_id={self.channel_id}>"
 
     if TYPE_CHECKING:
         def __init__(
@@ -104,7 +128,7 @@ class Channel(db.Model):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Self-referential parent (nullable)
-    parent_id: Mapped[Optional[str]] = mapped_column(
+    parent_id: Mapped[Optional[int | None]] = mapped_column(
         ForeignKey("channels.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
@@ -128,10 +152,50 @@ class Channel(db.Model):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=datetime.now(UTC),
         nullable=False,
         init=False,
     )
 
+    followers: Mapped[List["User"]] = relationship(
+        secondary="user_channel_follows",
+        back_populates="following",
+        init=False,
+    )
+
+    posts: Mapped[List["Post"]] = relationship(
+        back_populates="channel",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        init=False,
+    )
+
+    if TYPE_CHECKING:
+        def __init__(
+            self,
+            *,
+            name: str,
+            id: Optional[int] = ...,
+            parent_if: Optional[int] = ...,
+            parent: Optional[Channel] = ...,
+            children: Optional[List[Channel]] = ...,
+            created_at: Optional[datetime] = ...,
+            followers: Optional[List[User]] = ...,
+            **kw: Any,
+        ) -> None: ...
+
+    
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Channel {self.id} name={self.name!r} parent_id={self.parent_id!r}>"
+
+        
+user_channel_follows = sa.Table(
+    "user_channel_follows",
+    db.metadata,
+    sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    sa.Column("channel_id", sa.Integer, sa.ForeignKey("channels.id", ondelete="CASCADE"), primary_key=True),
+    sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+    # Optional: helpful index for reverse lookups
+    sa.Index("ix_ucf_channel_id", "channel_id"),
+    sa.Index("ix_ucf_user_id", "user_id"),
+)

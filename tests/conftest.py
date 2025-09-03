@@ -46,3 +46,17 @@ def login(client, make_user):
             follow_redirects=False,
         )
     return _login
+
+
+@pytest.fixture()
+def make_channel(db):
+    """Quick helper to create a Channel."""
+    from tipple.models import Channel
+    def _make(name: str = "general", parent: Channel | None = None) -> Channel:
+        ch = Channel(name=name)
+        if parent:
+            ch.parent = parent
+        db.session.add(ch)
+        db.session.commit()
+        return ch
+    return _make

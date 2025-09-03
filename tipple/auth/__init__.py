@@ -88,34 +88,17 @@ def logout_page():
 
 # tipple/auth/__init__.py
 
-@bp.route("/me", methods=["GET", "POST"])
+@bp.get("/me")
 @login_required
 def me_page():
-    post_form = PostForm()
-
-    if post_form.validate_on_submit():
-        body = (post_form.body.data or "").strip()
-        tags = (post_form.tags.data or "").strip() or None
-        p = Post(body=body, tags=tags) 
-        p.author = current_user # pyright: ignore[reportAttributeAccessIssue]
-        db.session.add(p)
-        db.session.commit()
-        flash("Posted!", "success")
-        return redirect(url_for("auth.me_page"))
-
-    # NEW: POST happened but form invalid (e.g., >255 chars) – flash and redirect
-    if post_form.is_submitted() and not post_form.validate():
-        # Optional: you can inspect post_form.body.errors / post_form.tags.errors
-        flash("Post or tags too long.", "danger")
-        return redirect(url_for("auth.me_page"))
-
     my_posts = (
         Post.query.filter_by(user_id=current_user.id)
         .order_by(Post.id.desc())
         .limit(20)
         .all()
     )
-    return render_template("auth/me.html", user=current_user, post_form=post_form, posts=my_posts)
+
+    return render_template("auth/me.html", user=current_user, posts=my_posts)
 
 
 # ---------- JSON API (unchanged behavior, just moved under /api) ----------

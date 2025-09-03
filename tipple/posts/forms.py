@@ -1,10 +1,11 @@
 # tipple/posts/forms.py
 from __future__ import annotations
 from flask_wtf import FlaskForm
-from wtforms import TextAreaField, StringField, SubmitField
+from wtforms import TextAreaField, StringField, SubmitField, HiddenField
 from wtforms.validators import DataRequired, Length, Optional
 
 class PostForm(FlaskForm):
+    channel_id = HiddenField("Channel")
     body = TextAreaField("What's on your mind?",
                          validators=[DataRequired(), Length(max=255)])
     tags = StringField("Add tags (comma-separated)",

@@ -17,33 +17,6 @@
           </ul>
         </div>
       </div>
-
-      {# Embed the post form here #}
-      {% include "posts/_post_form.html" with context %}
-
-      {# Optional: show recent posts #}
-      {% if posts %}
-        <div class="card shadow-sm">
-          <div class="card-body p-4">
-            <h2 class="h5 mb-3">Your recent posts</h2>
-            <ul class="list-group list-group-flush">
-              {% for p in posts %}
-                <li class="list-group-item">
-                  <div class="d-flex justify-content-between">
-                    <div>
-                      <div>{{ p.body }}</div>
-                      {% if p.tags %}
-                        <small class="text-muted">Tags: {{ p.tags }}</small>
-                      {% endif %}
-                    </div>
-                    <small class="text-muted">{{ p.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      {% endif %}
     </div>
   </div>
 {% endblock %}

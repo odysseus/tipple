@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}#{{ channel.name }} · tipple{% endblock %}
+
+{% block content %}
+
+  <!-- Channel header / breadcrumb -->
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center mb-3">
+        <h1 class="h4 mb-0">#{{ channel.name }}</h1>
+        {% if channel.parent %}
+          <span class="text-muted ms-3">
+            in <a href="{{ url_for('channels.show', channel_id=channel.parent.id) }}">#{{ channel.parent.name }}</a>
+          </span>
+        {% endif %}
+        <span class="ms-auto small text-muted">
+          created {{ channel.created_at.strftime("%Y-%m-%d %H:%M") }}
+        </span>
+      </div>
+
+      {# Embedded post-to-channel form #}
+      {% include "channels/_post_form.html" with context %}
+
+      {# Messages list #}
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          {% if messages %}
+            <ul class="list-group list-group-flush">
+              {% for m in messages %}
+                <li class="list-group-item">
+                  <div class="d-flex">
+                    <div class="flex-grow-1">
+                      <div class="mb-1">{{ m.body }}</div>
+                      <div class="small text-muted">
+                        by <strong>{{ m.author.username }}</strong>
+                        · {{ m.created_at.strftime("%Y-%m-%d %H:%M") }}
+                        {% if m.tags %}
+                          ·
+                          {% for t in m.tags.split(',') %}
+                            <span class="badge rounded-pill text-bg-secondary">{{ t.strip() }}</span>
+                          {% endfor %}
+                        {% endif %}
+                      </div>
+                    </div>
+                    {# optional: quick actions could go here #}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="p-4 text-center text-muted">
+              No messages yet. Be the first to post!
+            </div>
+          {% endif %}
+        </div>
+        {% if next_page_url %}
+          <div class="card-footer text-center">
+            <a class="btn btn-outline-secondary btn-sm" href="{{ next_page_url }}">Load more</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
